@@ -11,6 +11,9 @@
         </tr>
       </thead>
       <tbody>
+        <tr>
+          <td v-if="!contas" colspan="5" class="sem-registro">Nenhum registro encontrado.</td>
+        </tr>
         <tr v-for="conta in contas" :key="conta.id">
           <th scope="row">{{ conta.id }}</th>
           <td>{{ conta.cpf }}</td>
@@ -80,7 +83,14 @@
             >
               Cancelar
             </button>
-            <button type="button" class="btn btn-success" data-bs-dismiss="modal" @click="realizaTransacao()">Confirmar</button>
+            <button
+              type="button"
+              class="btn btn-success"
+              data-bs-dismiss="modal"
+              @click="realizaTransacao()"
+            >
+              Confirmar
+            </button>
           </div>
         </div>
       </div>
@@ -98,7 +108,7 @@ export default {
       contas: [],
       valor: 0,
       requestValor: {
-        valor: 0
+        valor: 0,
       },
       acao: {
         tipo: "",
@@ -119,14 +129,36 @@ export default {
   },
   methods: {
     listar() {
-      Contas.listarContas().then((response) => {
-        this.contas = response.data;
-      });
+      Contas.listarContas()
+        .then((response) => {
+          this.contas = response.data;
+        })
+        .catch((e) => {
+          console.log(e);
+          this.contas = false
+          alert("Sem conexão com a API de contas.");
+        });
     },
-    depositar(id) {
-      alert(id);
+    depositar() {
+      Contas.deposito(this.acao.id, this.requestValor)
+        .then((response) => {
+          this.listar();
+          alert(response.data.data);
+        })
+        .catch((e) => {
+          alert(e.response.data.error);
+        });
     },
-    sacar() {},
+    sacar() {
+      Contas.saque(this.acao.id, this.requestValor)
+        .then((response) => {
+          this.listar();
+          alert(response.data.data);
+        })
+        .catch((e) => {
+          alert(e.response.data.error);
+        });
+    },
     cancelar() {
       this.valor = 0;
       this.acao.id = 0;
@@ -137,36 +169,24 @@ export default {
       this.acao.tipo = tipo;
     },
     realizaTransacao() {
-      this.requestValor.valor = this.valor.replace('R$ ', '')
-      this.requestValor.valor = this.requestValor.valor.replace('.', '')
-      this.requestValor.valor = this.requestValor.valor.replace(',', '.')
+      this.requestValor.valor = this.valor.replace("R$ ", "");
+      this.requestValor.valor = this.requestValor.valor.replace(".", "");
+      this.requestValor.valor = this.requestValor.valor.replace(",", ".");
 
-      if (this.acao.tipo == '1') {
-        Contas.deposito(this.acao.id, this.requestValor).then(response => {
-          this.cancelar()
-          this.listar()
-          alert(response.data.data)
-        }).catch(e => {
-          this.cancelar()
-          alert(e.response.data.error)
-        })
+      if (this.acao.tipo == "1") {
+        this.depositar();
       }
 
-      if (this.acao.tipo == '2') {
-        Contas.saque(this.acao.id, this.requestValor).then(response => {
-          this.cancelar()
-          this.listar()
-          alert(response.data.data)
-        }).catch(e => {
-          this.cancelar()
-          alert(e.response.data.error)
-        })
+      if (this.acao.tipo == "2") {
+        this.sacar();
       }
+
+      this.cancelar();
     },
     formatPrice(value) {
-        let val = (value/1).toFixed(2).replace('.', ',')
-        return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-    }
+      let val = (value / 1).toFixed(2).replace(".", ",");
+      return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    },
   },
   directives: { money: VMoney },
 };
@@ -175,5 +195,8 @@ export default {
 <style>
 .btn.btn-danger {
   margin-left: 10px;
+}
+.sem-registro {
+  text-align: center;
 }
 </style>

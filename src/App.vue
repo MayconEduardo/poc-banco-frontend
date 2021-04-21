@@ -1,5 +1,6 @@
 <template>
-  <div>
+  <div class="container">
+    <h1>Lista de Contas</h1>
     <table class="table table-striped">
       <thead>
         <tr>
